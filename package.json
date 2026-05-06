@@ -1,0 +1,69 @@
+{
+  "name": "tengo",
+  "displayName": "Tengo",
+  "description": "Tengo language support: syntax highlighting, go-to-definition, find references via tengo-lsp.",
+  "version": "0.1.0",
+  "publisher": "popoffvg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/popoffvg/vscode-tengo"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:tengo"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "tengo",
+        "aliases": [
+          "Tengo",
+          "tengo"
+        ],
+        "extensions": [
+          ".tengo"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tengo",
+        "scopeName": "source.tengo",
+        "path": "./syntaxes/tengo.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Tengo",
+      "properties": {
+        "tengo.lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the tengo-lsp binary. If empty, searches PATH."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "package": "npm run compile && vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.0.0"
+  }
+}
