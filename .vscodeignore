@@ -3,3 +3,9 @@ node_modules/**
 tsconfig.json
 .vscode/**
 **/*.ts
+.github/**
+.pi/**
+.gitignore
+package-lock.json
+*.vsix
+*.log
