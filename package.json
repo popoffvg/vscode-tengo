@@ -2,7 +2,7 @@
   "name": "tengo",
   "displayName": "Tengo",
   "description": "Tengo language support: syntax highlighting, go-to-definition, find references via tengo-lsp.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "popoffvg",
   "license": "MIT",
   "repository": {
