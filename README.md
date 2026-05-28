@@ -16,11 +16,16 @@ packages: syntax highlighting plus full IDE features powered by
   - resolve SDK artifact calls — `plapi.getTemplateId`, `ll.importTemplate`,
     `assets.importSoftware`, `assets.importAsset`, `getSoftwareInfo` — from
     their string argument to the artifact file.
-- **Find references** across the open file.
+- **Find references** — workspace-wide for exported module members: every
+  `alias.member` usage in importing files plus references inside the defining
+  module. Local symbols resolve within their scope in the current file.
 - **Completion** — type `.` after an imported alias to list the members
   exported by that module.
 - **Hover** — shows the signature and doc comment (`//` and `/** */` JSDoc
   blocks, resolved through wrapped `export` maps) of imported members.
+- **Document outline** — top-level imports, functions, and variables, with an
+  `export` group whose children are each exported member; populates the
+  Outline view and the breadcrumb bar.
 
 ### Import resolution
 
