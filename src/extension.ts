@@ -8,7 +8,6 @@ import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
-  TransportKind,
 } from "vscode-languageclient/node";
 
 const REPO = "popoffvg/tengo-lsp";
@@ -30,9 +29,12 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
+  // No `transport: TransportKind.stdio` — that makes vscode-languageclient append
+  // a `--stdio` flag the server rejects. Omitting it still uses stdio (the server's
+  // default); we pass `-mode stdio` explicitly to be safe.
   const serverOptions: ServerOptions = {
     command: serverPath,
-    transport: TransportKind.stdio,
+    args: ["-mode", "stdio"],
   };
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "tengo" }],
@@ -53,15 +55,14 @@ async function getOrDownloadBinary(
   context: vscode.ExtensionContext,
   progress: vscode.Progress<{ message?: string }>
 ): Promise<string | undefined> {
+  // Resolution order: explicit config path -> bundled binary -> PATH -> cached
+  // download -> fresh download. The bundled, version-matched binary wins over
+  // whatever is on PATH (which may be a stale/incompatible build); use
+  // tengo.lsp.path to force a specific binary.
   const config = vscode.workspace.getConfiguration("tengo.lsp");
   const configPath = config.get<string>("path");
   if (configPath && fs.existsSync(configPath)) {
     return configPath;
-  }
-
-  const inPath = findInPath("tengo-lsp");
-  if (inPath) {
-    return inPath;
   }
 
   const binaryName = process.platform === "win32" ? "tengo-lsp.exe" : "tengo-lsp";
@@ -77,6 +78,11 @@ async function getOrDownloadBinary(
       }
     }
     return bundledPath;
+  }
+
+  const inPath = findInPath("tengo-lsp");
+  if (inPath) {
+    return inPath;
   }
 
   await fs.promises.mkdir(context.globalStorageUri.fsPath, { recursive: true });
