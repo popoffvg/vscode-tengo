@@ -64,8 +64,22 @@ async function getOrDownloadBinary(
     return inPath;
   }
 
-  await fs.promises.mkdir(context.globalStorageUri.fsPath, { recursive: true });
   const binaryName = process.platform === "win32" ? "tengo-lsp.exe" : "tengo-lsp";
+
+  // Binary bundled into a platform-specific VSIX (see .github/workflows/release.yml).
+  const bundledPath = path.join(context.extensionPath, "server", binaryName);
+  if (fs.existsSync(bundledPath)) {
+    if (process.platform !== "win32") {
+      try {
+        fs.chmodSync(bundledPath, 0o755);
+      } catch {
+        // best effort; binary may already be executable
+      }
+    }
+    return bundledPath;
+  }
+
+  await fs.promises.mkdir(context.globalStorageUri.fsPath, { recursive: true });
   const cachedPath = path.join(context.globalStorageUri.fsPath, binaryName);
   if (fs.existsSync(cachedPath)) {
     return cachedPath;

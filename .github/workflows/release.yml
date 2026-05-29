@@ -15,6 +15,9 @@ jobs:
     env:
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      # tengo-lsp release to bundle. "latest" resolves to the newest release.
+      LSP_VERSION: latest
+      LSP_REPO: popoffvg/tengo-lsp
     steps:
       - uses: actions/checkout@v4
 
@@ -35,19 +38,66 @@ jobs:
       - name: Compile
         run: npm run compile
 
-      - name: Package VSIX
-        run: npx --yes @vscode/vsce package --no-dependencies -o "tengo-${VERSION}.vsix"
+      - name: Package platform-specific VSIXes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # vsce target -> tengo-lsp asset name
+          declare -A ASSETS=(
+            [darwin-arm64]=tengo-lsp-darwin-aarch64.tar.gz
+            [darwin-x64]=tengo-lsp-darwin-x86_64.tar.gz
+            [linux-x64]=tengo-lsp-linux-x86_64.tar.gz
+            [linux-arm64]=tengo-lsp-linux-aarch64.tar.gz
+            [win32-x64]=tengo-lsp-windows-x86_64.zip
+          )
+
+          if [ "$LSP_VERSION" = "latest" ]; then
+            TAG=$(gh release view --repo "$LSP_REPO" --json tagName -q .tagName)
+          else
+            TAG="$LSP_VERSION"
+          fi
+          echo "Bundling tengo-lsp $TAG"
+
+          for TARGET in "${!ASSETS[@]}"; do
+            ASSET="${ASSETS[$TARGET]}"
+            rm -rf server && mkdir server
+            echo "::group::$TARGET <- $ASSET"
+            gh release download "$TAG" --repo "$LSP_REPO" --pattern "$ASSET" --dir server --clobber
+            case "$ASSET" in
+              *.tar.gz) tar -xzf "server/$ASSET" -C server && chmod +x server/tengo-lsp ;;
+              *.zip)    unzip -o "server/$ASSET" -d server ;;
+            esac
+            rm -f "server/$ASSET"
+            ls -l server
+            npx --yes @vscode/vsce package --no-dependencies --target "$TARGET" -o "tengo-${VERSION}-${TARGET}.vsix"
+            echo "::endgroup::"
+          done
+
+          # Universal VSIX (no bundled binary) for platforms we don't ship a binary
+          # for; the extension falls back to downloading tengo-lsp at runtime.
+          rm -rf server
+          npx --yes @vscode/vsce package --no-dependencies -o "tengo-${VERSION}.vsix"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: tengo-${{ env.VERSION }}.vsix
+          files: tengo-${{ env.VERSION }}*.vsix
           generate_release_notes: true
 
       - name: Publish to VS Code Marketplace
         if: env.VSCE_PAT != ''
-        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "tengo-${VERSION}.vsix" -p "$VSCE_PAT"
+        run: |
+          set -euo pipefail
+          for VSIX in tengo-${VERSION}-*.vsix tengo-${VERSION}.vsix; do
+            npx --yes @vscode/vsce publish --no-dependencies --packagePath "$VSIX" -p "$VSCE_PAT"
+          done
 
       - name: Publish to Open VSX
         if: env.OVSX_PAT != ''
-        run: npx --yes ovsx publish "tengo-${VERSION}.vsix" -p "$OVSX_PAT"
+        run: |
+          set -euo pipefail
+          for VSIX in tengo-${VERSION}-*.vsix tengo-${VERSION}.vsix; do
+            npx --yes ovsx publish "$VSIX" -p "$OVSX_PAT"
+          done
