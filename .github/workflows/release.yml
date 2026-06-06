@@ -16,7 +16,7 @@ jobs:
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
       # tengo-lsp release to bundle. "latest" resolves to the newest release.
-      LSP_VERSION: latest
+      LSP_VERSION: v0.2.4
       LSP_REPO: popoffvg/tengo-lsp
     steps:
       - uses: actions/checkout@v4
